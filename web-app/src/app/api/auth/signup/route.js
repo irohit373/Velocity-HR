@@ -14,7 +14,7 @@ export async function POST(request) {
        }
 
        const existingUser = await sql`
-        SELECT id FROM users WHERE email = ${email}
+        SELECT id FROM hrs WHERE email = ${email}
         `;
 
         if (existingUser.length > 0){
@@ -26,9 +26,9 @@ export async function POST(request) {
        
         const passwordHash = await hashPassword(password);
         const result = await sql`
-            INSERT INTO users (email, password_hash, username)
+            INSERT INTO hrs (email, password, name)
             VALUES (${email}, ${passwordHash}, ${name})
-            RETURNING id, email, username
+            RETURNING id, email, name
             `;
 
         const user = result[0];
@@ -36,7 +36,7 @@ export async function POST(request) {
         await setAuthCookie(token);
 
         return NextResponse.json({
-            user: {id: user.id, email: user.email, username: user.username},
+            user: {id: user.id, email: user.email, name: user.name},
         });
     } catch (error) {
         console.error('Signup error:', error);

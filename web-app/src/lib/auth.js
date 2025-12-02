@@ -1,56 +1,55 @@
+import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = new TextEncoder().encode(
+    process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+);
 
-if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET is not defined in environment variables');
+// Generate JWT token
+export async function generateToken(userId, email) {
+    const token = await new SignJWT({ userId, email })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('7d')
+        .setIssuedAt()
+        .sign(JWT_SECRET);
+    
+    return token;
 }
 
-export async function hashPassword(password) {
-    return bcrypt.hash(password, 12);
+// Verify JWT token (Edge Runtime compatible)
+export async function verifyToken(token) {
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        return payload;
+    } catch (error) {
+        console.error('Token verification failed:', error.message);
+        return null;
+    }
+}
+
+export async function getCurrentUser() {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get('auth-token')?.value;
+        
+        if (!token) {
+            return null;
+        }
+
+        const decoded = await verifyToken(token);
+        return decoded;
+    } catch (error) {
+        console.error('Get current user error:', error);
+        return null;
+    }
 }
 
 export async function verifyPassword(password, hashedPassword) {
     return bcrypt.compare(password, hashedPassword);
 }
 
-export function generateToken(userId, email) {
-    return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '7d' });
-}
-
-export function verifyToken(token) {
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch {
-        return null;
-    }
-}
-
-export async function setAuthCookie(token) {
-    (await cookies()).set('auth-token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-    });
-}
-
-export async function removeAuthCookie() {
-    (await cookies()).delete('auth-token');
-}
-
-export async function getAuthToken() {
-    return (await cookies()).get('auth-token')?.value;
-}
-
-export async function getCurrentUser() {
-    const token = await getAuthToken();
-    if (!token) return null;
-
-    const payload = verifyToken(token);
-    return payload;
+export async function hashPassword(password) {
+    return bcrypt.hash(password, 10);
 }
 

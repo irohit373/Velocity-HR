@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "PEOPLESPLUS AI",
+  title: "VELOCITY H",
   description: "",
 };
 

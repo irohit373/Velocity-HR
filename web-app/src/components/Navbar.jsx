@@ -22,13 +22,13 @@ export default function Navbar() {
           {/* Left: Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <img src="/favicon.ico" alt="PeoplePlus AI" className="w-12 h-12" />
+              <img src="/favicon.ico" alt="VELOCITY H" className="w-12 h-12" />
             </Link>
           </div>
 
           {/* Center: Brand Name (visible only on desktop) */}
           <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-            <h1 className="text-2xl bg-clip-text">PeoplePlus AI</h1>
+            <h1 className="text-2xl bg-clip-text">VELOCITY H</h1>
           </div>
 
           {/* Right: Desktop Navigation Links */}
@@ -46,7 +46,7 @@ export default function Navbar() {
               Sign Up
             </Link>
             <Link
-              href="/login"
+              href="/signin"
               className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-medium transition-colors"
             >
               Login
@@ -86,7 +86,7 @@ export default function Navbar() {
             
             {/* Brand name for mobile */}
             <div className="text-center py-2">
-              <h1 className="text-xl bg-clip-text">PeoplePlus AI</h1>
+              <h1 className="text-xl bg-clip-text">VELOCITY H</h1>
             </div>
 
             {/* Mobile Navigation Links */}
@@ -105,7 +105,7 @@ export default function Navbar() {
               Sign Up
             </Link>
             <Link
-              href="/login"
+              href="/signin"
               className="bg-blue-600 text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium text-center"
               onClick={closeMenu}
             >

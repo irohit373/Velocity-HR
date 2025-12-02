@@ -21,6 +21,7 @@ export default function SigninPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -30,8 +31,12 @@ export default function SigninPage() {
         return;
       }
 
-      router.push('/dashboard');
-      router.refresh();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      window.location.href = '/dashboard/recruiter';
+
+      // router.refresh();
+      // router.push('/dashboard/recruiter');
     } catch (err) {
       setError('An error occurred. Please try again.');
     } finally {
