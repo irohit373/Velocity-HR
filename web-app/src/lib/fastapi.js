@@ -1,61 +1,167 @@
 const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
+const FASTAPI_TIMEOUT = 60000; // 60 seconds
 
 /**
- * Generate a job summary using AI
- * @param {Object} jobData - Job data object
- * @param {string} jobData.job_title - Title of the job
- * @param {string} jobData.job_description - Description of the job
- * @param {number} jobData.required_experience_years - Required years of experience
- * @param {string[]} jobData.tags - Array of job tags
- * @returns {Promise<string>} Generated job summary
+ * Make a request to FastAPI with timeout and error handling
+ * @param {string} url - The URL to fetch
+ * @param {RequestInit} options - Fetch options
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Promise<Response>} The fetch response
  */
-export async function generateJobSummary(jobData) {
+async function fetchWithTimeout(
+  url,
+  options,
+  timeout = FASTAPI_TIMEOUT
+) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
   try {
-    const response = await fetch(`${FASTAPI_URL}/api/generate-job-summary`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(jobData),
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to generate job summary');
-    }
-
-    const data = await response.json();
-    return data.summary;
+    clearTimeout(timeoutId);
+    return response;
   } catch (error) {
-    console.error('FastAPI error:', error);
-    return ''; // Return empty if AI fails (graceful degradation)
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - AI service is taking too long');
+    }
+    throw error;
   }
 }
 
 /**
- * Analyze a resume against job requirements
- * @param {Object} data - Analysis data object
- * @param {string} data.resume_url - URL to the resume
- * @param {string} data.job_description - Job description to match against
- * @param {number} data.required_experience_years - Required years of experience
- * @returns {Promise<{score: number, summary: string}>} Analysis result with score and summary
+ * Generate AI job summary
+ * @param {Object} jobData - Job data object
+ * @param {string} jobData.job_title - Job title
+ * @param {string} jobData.job_description - Job description
+ * @param {number} jobData.required_experience_years - Required years of experience
+ * @param {string[]} jobData.tags - Job tags
+ * @returns {Promise<string>} The generated summary
+ */
+export async function generateJobSummary(jobData) {
+  try {
+    const response = await fetchWithTimeout(
+      `${FASTAPI_URL}/api/generate-job-summary`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobData),
+      }
+    );
+
+    if (!response.ok) {
+      // Try to get error details from response
+      let errorDetail = `FastAPI error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) {
+          errorDetail = errorData.detail;
+        }
+      } catch (e) {
+        // If JSON parsing fails, use status text
+        errorDetail = `${response.status} ${response.statusText}`;
+      }
+      console.error('FastAPI Error Details:', errorDetail);
+      console.error('Request data:', {
+        job_title: jobData.job_title,
+        has_description: !!jobData.job_description,
+        experience_years: jobData.required_experience_years,
+        tags_count: jobData.tags?.length || 0
+      });
+      throw new Error(errorDetail);
+    }
+
+    const data = await response.json();
+    return data.summary || '';
+  } catch (error) {
+    console.error('Job summary generation error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      job_title: jobData.job_title,
+      fastapi_url: FASTAPI_URL
+    });
+    // Graceful degradation - return empty string if AI fails
+    return '';
+  }
+}
+
+/**
+ * Analyze resume and generate score
+ * @param {Object} data - Resume analysis data
+ * @param {string} data.resume_url - URL of the resume file
+ * @param {string} data.job_description - Job description
+ * @param {string} data.cover_letter - Cover letter or additional details from applicant
+ * @returns {Promise<{score: number, summary: string, missing_keywords: array, jd_match: string}>} Score and summary
  */
 export async function analyzeResume(data) {
   try {
-    const response = await fetch(`${FASTAPI_URL}/api/analyze-resume`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+    const response = await fetchWithTimeout(
+      `${FASTAPI_URL}/api/analyze-resume`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    );
 
     if (!response.ok) {
-      throw new Error('Failed to analyze resume');
+      // Try to get error details from response
+      let errorDetail = `FastAPI error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) {
+          errorDetail = errorData.detail;
+        }
+      } catch (e) {
+        // If JSON parsing fails, use status text
+        errorDetail = `${response.status} ${response.statusText}`;
+      }
+      console.error('FastAPI Error Details:', errorDetail);
+      throw new Error(errorDetail);
     }
 
     const result = await response.json();
     return {
-      score: result.score,
-      summary: result.summary,
+      score: result.score || 0,
+      summary: result.summary || 'Analysis pending',
+      missing_keywords: result.missing_keywords || [],
+      jd_match: result.jd_match || '0%',
     };
   } catch (error) {
     console.error('Resume analysis error:', error);
-    return { score: 0, summary: '' };
+    console.error('Error details:', {
+      message: error.message,
+      resume_url: data.resume_url,
+      has_job_description: !!data.job_description,
+      has_cover_letter: !!data.cover_letter
+    });
+    // Graceful degradation
+    return {
+      score: 0,
+      summary: 'AI analysis failed. Please review manually.',
+      missing_keywords: [],
+      jd_match: '0%',
+    };
+  }
+}
+
+/**
+ * Health check for FastAPI service
+ * @returns {Promise<boolean>} True if service is healthy
+ */
+export async function checkFastAPIHealth() {
+  try {
+    const response = await fetchWithTimeout(
+      `${FASTAPI_URL}/health`,
+      { method: 'GET' },
+      5000 // 5 second timeout for health check
+    );
+    return response.ok;
+  } catch (error) {
+    console.error('FastAPI health check failed:', error);
+    return false;
   }
 }

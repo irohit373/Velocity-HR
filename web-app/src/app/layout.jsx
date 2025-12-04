@@ -1,7 +1,7 @@
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { UserProvider } from "@/providers/UserProvider";
-import Navbar from "@/components/Navbar";
+import NavbarWrapper from "@/components/NavbarWrapper";
 
 export const metadata = {
   title: "VELOCITY H",
@@ -14,12 +14,14 @@ export default async function RootLayout({ children }) {
   const user = await getCurrentUser();
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" data-theme="light">
+      <body className="bg-base-100">
         {/* Wrap entire app in UserProvider to share user data */}
         <UserProvider user={user}>
-          <Navbar />
-          {children}
+          <NavbarWrapper />
+          <main className="min-h-screen">
+            {children}
+          </main>
         </UserProvider>
       </body>
     </html>

@@ -4,20 +4,27 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Loader2 } from 'lucide-react';
 
-export default function AddJobModal({ onClose }) {
+// Modal component for editing existing job postings
+// Allows updating job details and triggering AI summary regeneration
+export default function EditJobModal({ job, onClose, onUpdate }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const [formData, setFormData] = useState({
-    job_title: '',
-    job_description: '',
-    required_experience_years: 0,
-    location: '',
-    salary_range: '',
-    tags: '',
-    expiry_date: '',
+    job_title: job.job_title,
+    job_description: job.job_description,
+    required_experience_years: job.required_experience_years,
+    location: job.location || '',
+    salary_range: job.salary_range || '',
+    tags: Array.isArray(job.tags) ? job.tags.join(', ') : '',
+    expiry_date: job.expiry_date 
+      ? new Date(job.expiry_date).toISOString().split('T')[0] 
+      : '',
+    is_active: job.is_active,
   });
 
+  // Submit updated job data to API
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,8 +37,8 @@ export default function AddJobModal({ onClose }) {
         .map(tag => tag.trim())
         .filter(Boolean);
 
-      const response = await fetch('/api/jobs', {
-        method: 'POST',
+      const response = await fetch(`/api/jobs/${job.job_id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
@@ -42,14 +49,12 @@ export default function AddJobModal({ onClose }) {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create job');
+        throw new Error(data.error || 'Failed to update job');
       }
 
-      // Close modal first for better UX
-      onClose();
-      
-      // Force a hard refresh to show new job
-      window.location.reload();
+      const { job: updatedJob } = await response.json();
+      onUpdate(updatedJob);
+      router.refresh();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,12 +64,12 @@ export default function AddJobModal({ onClose }) {
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="modal-box max-w-2xl">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-2xl">Create New Job</h3>
-          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost">
-            <X size={20} />
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Edit Job</h2>
+          <button onClick={onClose} className="btn btn-ghost btn-sm btn-circle">
+            <X size={24} />
           </button>
         </div>
 
@@ -78,7 +83,7 @@ export default function AddJobModal({ onClose }) {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Job Title *</span>
+              <span className="label-text">Job Title *</span>
             </label>
             <input
               type="text"
@@ -91,21 +96,21 @@ export default function AddJobModal({ onClose }) {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Job Description *</span>
+              <span className="label-text">Job Description *</span>
             </label>
             <textarea
               value={formData.job_description}
               onChange={(e) => setFormData({ ...formData, job_description: e.target.value })}
               rows={6}
-              className="textarea textarea-bordered w-full resize-none"
+              className="textarea textarea-bordered w-full"
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Required Experience (Years)</span>
+                <span className="label-text">Required Experience (Years)</span>
               </label>
               <input
                 type="number"
@@ -118,7 +123,7 @@ export default function AddJobModal({ onClose }) {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Location</span>
+                <span className="label-text">Location</span>
               </label>
               <input
                 type="text"
@@ -132,7 +137,7 @@ export default function AddJobModal({ onClose }) {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Salary Range</span>
+              <span className="label-text">Salary Range</span>
             </label>
             <input
               type="text"
@@ -145,7 +150,7 @@ export default function AddJobModal({ onClose }) {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Tags (comma-separated)</span>
+              <span className="label-text">Tags (comma-separated)</span>
             </label>
             <input
               type="text"
@@ -158,7 +163,7 @@ export default function AddJobModal({ onClose }) {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Expiry Date</span>
+              <span className="label-text">Expiry Date</span>
             </label>
             <input
               type="date"
@@ -168,35 +173,39 @@ export default function AddJobModal({ onClose }) {
             />
           </div>
 
-          {loading && (
-            <div className="alert alert-info">
-              <Loader2 className="animate-spin" size={20} />
-              <span>AI is generating job summary... This may take a moment.</span>
-            </div>
-          )}
+          <div className="form-control">
+            <label className="label cursor-pointer">
+              <span className="label-text">Job is Active</span>
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="checkbox checkbox-primary"
+              />
+            </label>
+          </div>
 
-          {/* Submit Buttons */}
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Submit Button */}
+          <div className="modal-action">
             <button
               type="button"
               onClick={onClose}
               className="btn btn-ghost"
-              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary gap-2"
+              className="btn btn-primary"
             >
               {loading && <Loader2 className="animate-spin" size={18} />}
-              {loading ? 'Creating...' : 'Create Job'}
+              <span>{loading ? 'Updating...' : 'Update Job'}</span>
             </button>
           </div>
         </form>
       </div>
-      <div className="modal-backdrop bg-black/50" onClick={onClose}></div>
     </div>
   );
-} 
+}

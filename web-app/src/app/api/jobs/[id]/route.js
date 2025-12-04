@@ -9,8 +9,11 @@ import { getCurrentUser } from '@/lib/auth';
  */
 export async function GET(request, { params }) {
   try {
+    // Await params before accessing properties (Next.js 15)
+    const resolvedParams = await params;
+    
     // Extract job ID from URL parameters and convert to integer
-    const jobId = parseInt(params.id);
+    const jobId = parseInt(resolvedParams.id);
     
     // Query database for the specific job
     const jobs = await sql`
@@ -43,8 +46,11 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Await params before accessing properties (Next.js 15)
+    const resolvedParams = await params;
+    
     // Extract job ID from URL parameters
-    const jobId = parseInt(params.id);
+    const jobId = parseInt(resolvedParams.id);
     
     // Parse the request body containing updated job data
     const body = await request.json();
@@ -97,8 +103,11 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Await params before accessing properties (Next.js 15)
+    const resolvedParams = await params;
+    
     // Extract job ID from URL parameters
-    const jobId = parseInt(params.id);
+    const jobId = parseInt(resolvedParams.id);
 
     // Delete the job, but only if it belongs to this user
     // RETURNING job_id confirms the deletion happened

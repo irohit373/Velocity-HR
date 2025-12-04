@@ -57,83 +57,73 @@ export default function JobTable({ initialJobs }) {
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+        <table className="table table-zebra">
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Job Title
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Experience
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th>Job Title</th>
+              <th>Experience</th>
+              <th>Created</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {jobs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={5} className="text-center py-12 text-base-content/50">
                   No jobs posted yet. Click "Add New Job" to get started.
                 </td>
               </tr>
             ) : (
               jobs.map((job) => (
-                <tr key={job.job_id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+                <tr key={job.job_id}>
+                  <td>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="font-medium">
                         {job.job_title}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-base-content/50">
                         {job.location || 'Remote'}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
+                  <td>
                     {job.required_experience_years} years
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="text-base-content/70">
                     {formatDate(job.created_at)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <button
                       onClick={() => handleToggleActive(job.job_id, job.is_active)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      className={`badge cursor-pointer ${
                         job.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'badge-success badge-outline'
+                          : 'badge-ghost'
                       }`}
                     >
                       {job.is_active ? 'Active' : 'Inactive'}
                     </button>
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => router.push(`/dashboard/recruitment/${job.job_id}`)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="btn btn-ghost btn-sm"
                         title="View Applicants"
                       >
                         <Users size={18} />
                       </button>
                       <button
                         onClick={() => setEditingJob(job)}
-                        className="text-gray-600 hover:text-gray-800"
+                        className="btn btn-ghost btn-sm"
                         title="Edit Job"
                       >
                         <Pencil size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(job.job_id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="btn btn-ghost btn-sm text-error"
                         title="Delete Job"
                       >
                         <Trash2 size={18} />

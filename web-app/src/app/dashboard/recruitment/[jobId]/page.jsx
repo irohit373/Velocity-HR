@@ -14,7 +14,9 @@ export default async function JobApplicantsPage({ params }) {
     redirect('/login');
   }
 
-  const jobId = parseInt(params.jobId);
+  // In Next.js 15, params is a Promise
+  const resolvedParams = await params;
+  const jobId = parseInt(resolvedParams.jobId);
 
   // Verify job ownership
   const jobs = await sql`

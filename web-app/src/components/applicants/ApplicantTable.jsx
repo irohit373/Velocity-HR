@@ -31,33 +31,21 @@ export default function ApplicantTable({ applicants }) {
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+        <table className="table table-zebra">
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Experience
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                AI Score
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Applied
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
-              </th>
+              <th>Name</th>
+              <th>Experience</th>
+              <th>AI Score</th>
+              <th>Applied</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {applicants.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={6} className="text-center py-12 text-base-content/50">
                   No applications yet.
                 </td>
               </tr>
@@ -65,54 +53,54 @@ export default function ApplicantTable({ applicants }) {
               applicants.map((applicant) => (
                 <tr
                   key={applicant.applicant_id}
-                  className="hover:bg-gray-50 cursor-pointer"
+                  className="hover cursor-pointer"
                   onClick={() => setSelectedApplicant(applicant)}
                 >
-                  <td className="px-6 py-4">
+                  <td>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="font-medium">
                         {applicant.full_name}
                       </div>
-                      <div className="text-sm text-gray-500">{applicant.email}</div>
+                      <div className="text-sm text-base-content/50">{applicant.email}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
+                  <td>
                     {applicant.experience_years} years
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <div className={`flex items-center space-x-1 ${getScoreColor(applicant.ai_generated_score)}`}>
                       <Star size={16} fill="currentColor" />
                       <span className="text-sm font-semibold">
-                        {applicant.ai_generated_score?.toFixed(1) || 'Pending'}
+                        {applicant.ai_generated_score ? Number(applicant.ai_generated_score).toFixed(1) : 'Pending'}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="text-base-content/70">
                     {formatDate(applicant.applied_at)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      className={`badge ${
                         applicant.status === 'shortlisted'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'badge-success'
                           : applicant.status === 'reviewed'
-                          ? 'bg-blue-100 text-blue-800'
+                          ? 'badge-info'
                           : applicant.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'badge-error'
+                          : 'badge-ghost'
                       }`}
                     >
                       {applicant.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <div className="flex space-x-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedApplicant(applicant);
                         }}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="btn btn-ghost btn-sm"
                         title="View Details"
                       >
                         <Eye size={18} />
@@ -122,7 +110,7 @@ export default function ApplicantTable({ applicants }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-green-600 hover:text-green-800"
+                        className="btn btn-ghost btn-sm text-success"
                         title="Download Resume"
                       >
                         <Download size={18} />

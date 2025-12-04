@@ -1,172 +1,155 @@
-// Mark as client component for interactivity (needed for useState)
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useUser } from "@/providers/UserProvider";
 import UserDropdown from "./UserDropdown";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
 
 export default function Navbar() {
-  // Get user from Context Provider (no prop needed!)
   const user = useUser();
-  
-  // Mobile Toogle menu variable 
-  // State to track mobile menu open/close
-  const [isOpen, setIsOpen] = useState(false);
-  
-  // Toggle mobile menu state
-  const toggleMenu = () => setIsOpen(!isOpen);
-  // Close mobile menu
-  const closeMenu = () => setIsOpen(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/signin';
+  };
 
   return (
-    <nav className="shadow-md">
-      {/* Main navbar container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-1 lg:px-1">
-        <div className="flex justify-between items-center h-16">
-          
-          {/* Left: Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
-              <img src="/favicon.ico" alt="VELOCITY H" className="w-12 h-12" />
-            </Link>
-          </div>
-
-          {/* Center: Brand Name (visible only on desktop) */}
-          <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-            <h1 className="text-2xl bg-clip-text">VELOCITY H</h1>
-          </div>
-
-          {/* Right: Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link
-              href="/jobs"
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
-            >
-              Job List
-            </Link>
-            
-            {/* Conditional Rendering: Show based on auth status */}
-            {user ? (
-              // If logged in: Show User Dropdown
-              <UserDropdown user={user} />
-            ) : (
-              // If not logged in: Show Sign Up & Login
-              <>
-                <Link
-                  href="/signup"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
-                >
-                  Sign Up
-                </Link>
-                <Link
-                  href="/signin"
-                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-medium transition-colors"
-                >
-                  Login
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile: Hamburger Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-              aria-expanded={isOpen}
-            >
-              <span className="sr-only">Open main menu</span>
-              
-              {/* Show hamburger icon when menu is closed, X icon when open */}
-              {!isOpen ? (
-                // Hamburger Icon
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              ) : (
-                // Close Icon (X)
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
+    <nav className="navbar bg-base-100 border-b border-base-300 px-4 lg:px-8 h-14 min-h-14">
+      <div className="flex-1">
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <img src="/favicon.ico" alt="Logo" className="w-8 h-8" />
+          <span className="text-lg font-bold tracking-wider hidden sm:inline bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '0.05em' }}>
+            VELOCITY H
+          </span>
+        </Link>
       </div>
 
-      {/* Mobile Menu Dropdown (shown when isOpen is true) */}
-      {isOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-            
-            {/* Brand name for mobile */}
-            <div className="text-center py-2">
-              <h1 className="text-xl bg-clip-text">VELOCITY H</h1>
+      {/* Desktop Navigation */}
+      <div className="flex-none hidden lg:flex items-center gap-2">
+        <Link href="/jobs" className="px-3 py-1.5 font-medium hover:bg-base-200 rounded-lg transition-colors">
+          Jobs
+        </Link>
+          
+        {user ? (
+          <UserDropdown user={user} />
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link href="/signup" className="px-3 py-1.5 font-medium hover:bg-base-200 rounded-lg transition-colors">
+              Sign Up
+            </Link>
+            <Link href="/signin" className="btn btn-primary btn-sm h-9 min-h-9">
+              Login
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Menu Button */}
+      <div className="flex-none lg:hidden">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="btn btn-ghost btn-sm btn-square"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          
+          {/* Drawer */}
+          <div className="fixed top-0 right-0 bottom-0 w-64 bg-base-100 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-base-300">
+              <span className="text-lg font-bold">Menu</span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="btn btn-ghost btn-sm btn-square"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            {/* Mobile Navigation Links */}
-            <Link
-              href="/jobs"
-              className="text-gray-700 hover:text-blue-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={closeMenu}
-            >
-              Job List
-            </Link>
+            <ul className="menu p-4 gap-1">
+              <li>
+                <Link
+                  href="/jobs"
+                  className="font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Jobs
+                </Link>
+              </li>
 
-            {/* Mobile: Conditional Rendering */}
-            {user ? (
-              // If logged in: Show user info and logout
-              <>
-                <div className="border-t border-gray-200 pt-2 mt-2">
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-semibold text-gray-900">{user.name || 'User'}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                  </div>
-                  <Link
-                    href="/dashboard/recruiter"
-                    className="text-gray-700 hover:text-blue-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={closeMenu}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/dashboard/scheduling"
-                    className="text-gray-700 hover:text-blue-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                    onClick={closeMenu}
-                  >
-                    Scheduling
-                  </Link>
-                  <button
-                    onClick={async () => {
-                      await fetch('/api/auth/logout', { method: 'POST' });
-                      window.location.href = '/signin';
-                    }}
-                    className="w-full text-left text-red-600 hover:bg-red-50 block px-3 py-2 rounded-md text-base font-medium"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </>
-            ) : (
-              // If not logged in: Show Sign Up & Login
-              <>
-                <Link
-                  href="/signup"
-                  className="text-gray-700 hover:text-blue-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={closeMenu}
-                >
-                  Sign Up
-                </Link>
-                <Link
-                  href="/signin"
-                  className="bg-blue-600 text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium text-center"
-                  onClick={closeMenu}
-                >
-                  Login
-                </Link>
-              </>
-            )}
+              {user ? (
+                <>
+                  <li className="menu-title mt-4">
+                    <span>Account</span>
+                  </li>
+                  <li>
+                    <div className="flex flex-col gap-1 p-3 bg-base-200 rounded-lg pointer-events-none">
+                      <span className="font-semibold text-sm">{user.name || 'User'}</span>
+                      <span className="text-xs opacity-70 truncate">{user.email}</span>
+                    </div>
+                  </li>
+                  <li>
+                    <Link
+                      href="/dashboard/recruitment"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/dashboard/scheduling"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Scheduling
+                    </Link>
+                  </li>
+                  <li className="mt-2">
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="text-error font-medium"
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="mt-4">
+                    <Link
+                      href="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/signin"
+                      className="btn btn-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ul>
           </div>
         </div>
       )}

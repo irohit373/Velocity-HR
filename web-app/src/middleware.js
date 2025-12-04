@@ -7,10 +7,10 @@ export async function middleware(request) {
 
     console.log('Middleware - Path:', pathname, 'Has Token:', !!token);
 
-    // Redirect /dashboard to /dashboard/recruiter
+    // Redirect /dashboard to /dashboard/recruitment
     if (pathname === '/dashboard') {
-        console.log('Redirecting /dashboard to /dashboard/recruiter');
-        return NextResponse.redirect(new URL('/dashboard/recruiter', request.url));
+        console.log('Redirecting /dashboard to /dashboard/recruitment');
+        return NextResponse.redirect(new URL('/dashboard/recruitment', request.url));
     }
 
     // Protect dashboard routes
@@ -34,8 +34,8 @@ export async function middleware(request) {
         if (token) {
             const decoded = await verifyToken(token); // await needed
             if (decoded) {
-                console.log('Already authenticated, redirecting to /dashboard/recruiter');
-                return NextResponse.redirect(new URL('/dashboard/recruiter', request.url));
+                console.log('Already authenticated, redirecting to /dashboard/recruitment');
+                return NextResponse.redirect(new URL('/dashboard/recruitment', request.url));
             }
         }
     }

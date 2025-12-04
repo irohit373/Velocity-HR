@@ -1,7 +1,15 @@
-import { getCurrentUser } from '@/lib/auth';
+'use client';
+
+import { usePathname } from 'next/navigation';
 import Navbar from './Navbar';
 
-export default async function NavbarWrapper() {
-  const user = await getCurrentUser();
-  return <Navbar user={user} />;
+export default function NavbarWrapper() {
+  const pathname = usePathname();
+  
+  // Don't show navbar on auth pages
+  const hideNavbar = pathname === '/signin' || pathname === '/signup';
+  
+  if (hideNavbar) return null;
+  
+  return <Navbar />;
 }

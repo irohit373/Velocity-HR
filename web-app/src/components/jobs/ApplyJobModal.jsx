@@ -94,11 +94,11 @@ export default function ApplyJobModal({ job, onClose }) {
 
   if (success) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-md w-full p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="modal modal-open">
+        <div className="modal-box text-center">
+          <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-green-600"
+              className="w-8 h-8 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -111,14 +111,14 @@ export default function ApplyJobModal({ job, onClose }) {
               />
             </svg>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          <h3 className="text-2xl font-bold mb-2">
             Application Submitted!
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-base-content/70 mb-4">
             Your application for <strong>{job.job_title}</strong> has been successfully submitted.
             Our AI is analyzing your resume and you'll hear from us soon.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-base-content/50">
             Redirecting to home page...
           </p>
         </div>
@@ -127,17 +127,17 @@ export default function ApplyJobModal({ job, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-3xl w-full my-8">
+    <div className="modal modal-open">
+      <div className="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex justify-between items-start p-6 border-b">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Apply for {job.job_title}</h2>
-            <p className="text-gray-600 mt-1">{job.location || 'Remote'}</p>
+            <h2 className="text-2xl font-bold">Apply for {job.job_title}</h2>
+            <p className="text-base-content/70 mt-1">{job.location || 'Remote'}</p>
           </div>
           <button 
             onClick={onClose} 
-            className="text-gray-500 hover:text-gray-700"
+            className="btn btn-ghost btn-sm btn-circle"
             disabled={loading}
           >
             <X size={24} />
@@ -145,17 +145,17 @@ export default function ApplyJobModal({ job, onClose }) {
         </div>
 
         {/* Job Details */}
-        <div className="bg-gray-50 p-6 border-b">
-          <h3 className="font-semibold text-gray-900 mb-2">About this position:</h3>
-          <p className="text-gray-700 text-sm mb-3">
-            {job.ai_generated_summary || job.job_description.substring(0, 200) + '...'}
+        <div className="bg-base-200 p-4 rounded-lg mb-4">
+          <h3 className="font-semibold mb-2">About this position:</h3>
+          <p className="text-sm text-base-content/70 mb-3 line-clamp-3">
+            {job.job_description}
           </p>
           <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+            <span className="badge badge-outline">
               {job.required_experience_years} years required
             </span>
             {job.tags?.map((tag, idx) => (
-              <span key={idx} className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-full">
+              <span key={idx} className="badge badge-ghost badge-sm">
                 {tag}
               </span>
             ))}
@@ -163,149 +163,125 @@ export default function ApplyJobModal({ job, onClose }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-              {error}
+            <div className="alert alert-error">
+              <span>{error}</span>
             </div>
           )}
 
           {/* Full Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name *
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Full Name *</span>
             </label>
             <input
               type="text"
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="input input-bordered w-full"
               required
             />
           </div>
 
           {/* Email & Phone */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Email *</span>
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input input-bordered w-full"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Phone</span>
               </label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input input-bordered w-full"
               />
             </div>
           </div>
 
           {/* DOB & Experience */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date of Birth
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Date of Birth</span>
               </label>
               <input
                 type="date"
                 value={formData.dob}
                 onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input input-bordered w-full"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Years of Experience *
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Years of Experience *</span>
               </label>
               <input
                 type="number"
                 min="0"
                 value={formData.experience_years}
                 onChange={(e) => setFormData({ ...formData, experience_years: parseInt(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input input-bordered w-full"
                 required
               />
             </div>
           </div>
 
           {/* Cover Letter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cover Letter / Additional Details
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Cover Letter / Additional Details</span>
             </label>
             <textarea
               value={formData.detail_box}
               onChange={(e) => setFormData({ ...formData, detail_box: e.target.value })}
               rows={5}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="textarea textarea-bordered w-full"
               placeholder="Tell us why you're a great fit for this role..."
             />
           </div>
 
           {/* Resume Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Resume (PDF only) *
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Resume (PDF only) *</span>
             </label>
-            <div className="relative">
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleResumeChange}
-                className="hidden"
-                id="resume-upload"
-                disabled={loading}
-              />
-              <label
-                htmlFor="resume-upload"
-                className={`flex items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                  resume
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-300 hover:border-blue-500 bg-gray-50'
-                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {resume ? (
-                  <div className="flex items-center space-x-2 text-green-700">
-                    <FileText size={24} />
-                    <div className="text-left">
-                      <p className="font-medium">{resume.name}</p>
-                      <p className="text-xs text-gray-600">
-                        {(resume.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <Upload className="mx-auto mb-2 text-gray-400" size={32} />
-                    <p className="text-sm text-gray-600">
-                      Click to upload or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PDF only, max 5MB
-                    </p>
-                  </div>
-                )}
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleResumeChange}
+              className="file-input file-input-bordered w-full"
+              id="resume-upload"
+              disabled={loading}
+            />
+            {resume && (
+              <label className="label">
+                <span className="label-text-alt text-success">
+                  <FileText size={14} className="inline mr-1" />
+                  {resume.name} ({(resume.size / 1024).toFixed(2)} KB)
+                </span>
               </label>
-            </div>
+            )}
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="modal-action">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="btn btn-ghost"
               disabled={loading}
             >
               Cancel
@@ -313,7 +289,7 @@ export default function ApplyJobModal({ job, onClose }) {
             <button
               type="submit"
               disabled={loading || !resume}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+              className="btn btn-primary"
             >
               {loading && <Loader2 className="animate-spin" size={18} />}
               <span>{loading ? 'Submitting...' : 'Submit Application'}</span>
@@ -321,9 +297,9 @@ export default function ApplyJobModal({ job, onClose }) {
           </div>
 
           {loading && (
-            <p className="text-sm text-gray-600 text-center">
-              Uploading resume and analyzing with AI... This may take a moment.
-            </p>
+            <div className="alert alert-info">
+              <span className="text-sm">Uploading resume and analyzing with AI... This may take a moment.</span>
+            </div>
           )}
         </form>
       </div>
