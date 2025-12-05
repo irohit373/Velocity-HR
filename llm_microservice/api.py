@@ -64,7 +64,7 @@ class ResumeAnalysisResponse(BaseModel):
     jd_match: str  # Percentage as string (e.g., "85%")
 
 # Helper Functions
-def get_response(client, input_prompt, model_name="mistralai/mistral-small-3.1-24b-instruct:free"):
+def get_response(client, input_prompt, model_name="meta-llama/llama-3.3-70b-instruct:free"):
     """
     Sends the prompt to OpenRouter and returns the text response.
     """
@@ -188,7 +188,7 @@ async def test_ai():
         
         # Test prompt
         test_prompt = "Say 'Hello! I am working correctly.' in a friendly way."
-        model = "mistralai/mistral-small-3.1-24b-instruct:free"
+        model = "meta-llama/llama-3.3-70b-instruct:free"
         
         print(f"🤖 Testing model: {model}")
         
@@ -278,8 +278,8 @@ async def generate_job_summary(request: JobSummaryRequest):
         
         print(f"🤖 Sending to AI (prompt length: {len(final_prompt)} chars)...")
         
-        # Get AI response - using Qwen free model
-        model = "mistralai/mistral-small-3.1-24b-instruct:free"
+        # Get AI response - using Meta Llama 3.3 70B free model
+        model = "meta-llama/llama-3.3-70b-instruct:free"
         response_text = get_response(client, final_prompt, model)
         
         print(f"✓ AI responded (response length: {len(response_text)} chars)")
@@ -389,8 +389,8 @@ async def analyze_resume(request: ResumeAnalysisRequest):
         
         print("🤖 Sending to AI for analysis...")
         
-        # Get AI response - using Qwen free model
-        model = "mistralai/mistral-small-3.1-24b-instruct:free"
+        # Get AI response - using Meta Llama 3.3 70B free model
+        model = "meta-llama/llama-3.3-70b-instruct:free"
         response_text = get_response(client, final_prompt, model)
         
         # Parse JSON response with better error handling
@@ -471,8 +471,8 @@ async def evaluate_resume(
             api_key= os.getenv("OPENROUTER_API_KEY", ''),
         )
         
-        # MODEL - using Qwen free model
-        model = "mistralai/mistral-small-3.1-24b-instruct:free"
+        # MODEL - using Meta Llama 3.3 70B free model
+        model = "meta-llama/llama-3.3-70b-instruct:free"
 
         # Format prompt
         final_prompt = input_prompt_template.format(text=resume_text, jd=job_description)
