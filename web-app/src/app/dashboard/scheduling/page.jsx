@@ -2,8 +2,14 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 // import LogoutButton from '@/compopnents/LogoutButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
     const user = await getCurrentUser();
+    
+    if (!user) {
+        redirect('/signin');
+    }
     
     return (
     <div className="min-h-screen bg-base-200 p-8">

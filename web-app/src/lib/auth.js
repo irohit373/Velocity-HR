@@ -1,5 +1,4 @@
 import { SignJWT, jwtVerify } from 'jose';
-import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
 const JWT_SECRET = new TextEncoder().encode(
@@ -45,11 +44,81 @@ export async function getCurrentUser() {
     }
 }
 
+// Set authentication cookie
+export async function setAuthCookie(token) {
+    const cookieStore = await cookies();
+    cookieStore.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+}
+
+// Password hashing using Web Crypto API (Edge Runtime compatible)
 export async function verifyPassword(password, hashedPassword) {
-    return bcrypt.compare(password, hashedPassword);
+    const encoder = new TextEncoder();
+    const passwordKey = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(password),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits']
+    );
+    
+    const [saltHex, hashHex] = hashedPassword.split(':');
+    const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+    const storedHash = new Uint8Array(hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt: salt,
+            iterations: 100000,
+            hash: 'SHA-256'
+        },
+        passwordKey,
+        256
+    );
+    
+    const derivedHash = new Uint8Array(derivedBits);
+    
+    // Constant-time comparison
+    if (derivedHash.length !== storedHash.length) return false;
+    let result = 0;
+    for (let i = 0; i < derivedHash.length; i++) {
+        result |= derivedHash[i] ^ storedHash[i];
+    }
+    return result === 0;
 }
 
 export async function hashPassword(password) {
-    return bcrypt.hash(password, 10);
+    const encoder = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    
+    const passwordKey = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(password),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits']
+    );
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt: salt,
+            iterations: 100000,
+            hash: 'SHA-256'
+        },
+        passwordKey,
+        256
+    );
+    
+    const hash = new Uint8Array(derivedBits);
+    const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashHex = Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return `${saltHex}:${hashHex}`;
 }
 

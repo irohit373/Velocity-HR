@@ -8,6 +8,9 @@ export const metadata = {
   description: "AI Powered Platform For Recruitment & Scheduling",
 };
 
+// Force dynamic rendering for all pages that use cookies
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({ children }) {
   // Server-side: Fetch user data once per request
   // This runs on the server, so it can use cookies() safely
