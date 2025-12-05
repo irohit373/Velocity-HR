@@ -1,5 +1,5 @@
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
-const FASTAPI_TIMEOUT = 60000; // 60 seconds
+const FASTAPI_URL = (process.env.FASTAPI_URL || 'http://localhost:8000');
+const FASTAPI_TIMEOUT = 120000; // 120 seconds
 
 /**
  * Make a request to FastAPI with timeout and error handling
