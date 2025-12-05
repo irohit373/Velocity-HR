@@ -1,4 +1,4 @@
-## Getting Started
+<!-- ## Getting Started
 
 we are using pnpm instead of npm because of its performance and efficient package management.
 
@@ -40,4 +40,4 @@ git commit -m "your commit message"
 git push origin your-branch-name (esha-ui)
 ```
 
-
+ -->
