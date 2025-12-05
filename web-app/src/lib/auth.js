@@ -57,6 +57,15 @@ export async function setAuthCookie(token) {
 
 // Password hashing using Web Crypto API (Edge Runtime compatible)
 export async function verifyPassword(password, hashedPassword) {
+    // Check if it's a bcrypt hash (legacy format)
+    if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$')) {
+        // For bcrypt hashes, we need bcryptjs
+        // Import dynamically to avoid Edge Runtime issues in other parts
+        const bcrypt = await import('bcryptjs');
+        return bcrypt.default.compare(password, hashedPassword);
+    }
+    
+    // New PBKDF2 format: salt:hash
     const encoder = new TextEncoder();
     const passwordKey = await crypto.subtle.importKey(
         'raw',
@@ -67,6 +76,12 @@ export async function verifyPassword(password, hashedPassword) {
     );
     
     const [saltHex, hashHex] = hashedPassword.split(':');
+    
+    // Validate format
+    if (!saltHex || !hashHex) {
+        throw new Error('Invalid password hash format');
+    }
+    
     const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
     const storedHash = new Uint8Array(hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
     
