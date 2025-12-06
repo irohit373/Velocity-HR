@@ -18,13 +18,10 @@ app = FastAPI(title="Velocity-H Backend API")
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://velocity-h.vercel.app")
 allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",")]
 
-# Add Vercel preview URLs support
-allowed_origins.append("https://*.vercel.app")
-
-# CORS Configuration for Next.js
+# CORS Configuration for Next.js with regex pattern for Vercel preview URLs
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,7 +63,7 @@ class ResumeAnalysisResponse(BaseModel):
 # Helper Functions
 def get_response(client, input_prompt, model_name="meta-llama/llama-3.3-70b-instruct:free"):
     """
-    Sends the prompt to OpenRouter and returns the text response.
+    Sends the prompt to OpenRouter and returns t 2he text response.
     """
     try:
         response = client.chat.completions.create(

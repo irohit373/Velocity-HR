@@ -85,7 +85,12 @@ export default function ApplyJobModal({ job, onClose }) {
       }, 2000);
       
     } catch (err) {
-      setError(err.message);
+      // Show user-friendly message for duplicate applications
+      if (err.message.includes('already applied')) {
+        setError('You have already submitted an application for this position.');
+      } else {
+        setError(err.message || 'Failed to submit application. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
