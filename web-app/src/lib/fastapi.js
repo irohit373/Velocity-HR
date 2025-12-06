@@ -1,4 +1,4 @@
-const FASTAPI_URL = (process.env.FASTAPI_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const FASTAPI_URL = (process.env.FASTAPI_URL || 'http://localhost:8000');
 
 console.log('[FastAPI Config] FASTAPI_URL:', FASTAPI_URL);
 
@@ -103,6 +103,13 @@ export async function analyzeResume(data) {
     }
 
     const result = await response.json();
+    console.log('[analyzeResume] Response received:', {
+      score: result.score,
+      summary_length: result.summary?.length || 0,
+      has_missing_keywords: !!result.missing_keywords,
+      jd_match: result.jd_match
+    });
+    
     return {
       score: result.score || 0,
       summary: result.summary || 'Analysis pending',
