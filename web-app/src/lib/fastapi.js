@@ -76,6 +76,7 @@ export async function analyzeResume(data) {
       has_cover_letter: !!data.cover_letter
     });
     
+    console.log('[analyzeResume] Waiting for response...');
     const response = await fetch(
       url,
       {
@@ -84,12 +85,16 @@ export async function analyzeResume(data) {
         body: JSON.stringify(data),
       }
     );
+    
+    console.log('[analyzeResume] Response status:', response.status);
+    console.log('[analyzeResume] Response ok:', response.ok);
 
     if (!response.ok) {
       // Try to get error details from response
       let errorDetail = `FastAPI error: ${response.status}`;
       try {
         const errorData = await response.json();
+        console.error('[analyzeResume] Error response body:', errorData);
         if (errorData.detail) {
           errorDetail = errorData.detail;
         }
@@ -97,12 +102,13 @@ export async function analyzeResume(data) {
         // If JSON parsing fails, use status text
         errorDetail = `${response.status} ${response.statusText}`;
       }
-      console.error('FastAPI Error Details:', errorDetail);
-      console.error('Request URL:', url);
+      console.error('[analyzeResume] Error Details:', errorDetail);
       throw new Error(errorDetail);
     }
 
+    console.log('[analyzeResume] Parsing JSON response...');
     const result = await response.json();
+    console.log('[analyzeResume] Raw response:', result);
     console.log('[analyzeResume] Response received:', {
       score: result.score,
       summary_length: result.summary?.length || 0,
@@ -117,7 +123,7 @@ export async function analyzeResume(data) {
       jd_match: result.jd_match || '0%',
     };
   } catch (error) {
-    console.error('Resume analysis error:', error);
+    console.error('[analyzeResume] ERROR:', error);
     console.error('Error details:', {
       message: error.message,
       resume_url: data.resume_url,

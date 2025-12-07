@@ -3,6 +3,9 @@ import { sql } from '@/lib/db';
 import { put } from '@vercel/blob';
 import { analyzeResume } from '@/lib/fastapi';
 
+// Increase function timeout to 60 seconds for AI processing
+export const maxDuration = 60;
+
 /**
  * POST /api/applicants
  * Submit a job application with resume
@@ -75,27 +78,29 @@ export async function POST(request) {
       FROM jobs WHERE job_id = ${job_id}
     `;
 
-    // Step: AI Resume Analysis (runs in background)
-    // Don't await - improves response time for user
-    // AI will analyze resume and update score/summary later
+    // Step: AI Resume Analysis (SYNCHRONOUS - wait for completion)
+    // This ensures the AI analysis completes before serverless function terminates
+    let aiAnalysis = null;
     if (jobs.length > 0) {
       console.log(`[Applicant ${applicant.applicant_id}] Starting AI analysis...`);
-      analyzeResume({
-        resume_url: blob.url,
-        job_description: jobs[0].job_description,
-        required_experience_years: jobs[0].required_experience_years,
-      }).then(async (analysis) => {
+      try {
+        aiAnalysis = await analyzeResume({
+          resume_url: blob.url,
+          job_description: jobs[0].job_description,
+          required_experience_years: jobs[0].required_experience_years,
+        });
+        
         console.log(`[Applicant ${applicant.applicant_id}] AI analysis received:`, {
-          score: analysis.score,
-          summary_length: analysis.summary?.length || 0,
-          missing_keywords: analysis.missing_keywords?.length || 0
+          score: aiAnalysis.score,
+          summary_length: aiAnalysis.summary?.length || 0,
+          missing_keywords: aiAnalysis.missing_keywords?.length || 0
         });
         
         // Update applicant record with AI-generated insights
         const updateResult = await sql`
           UPDATE applicants 
-          SET ai_generated_score = ${analysis.score},
-              ai_generated_summary = ${analysis.summary}
+          SET ai_generated_score = ${aiAnalysis.score},
+              ai_generated_summary = ${aiAnalysis.summary}
           WHERE applicant_id = ${applicant.applicant_id}
           RETURNING applicant_id, ai_generated_score, ai_generated_summary
         `;
@@ -104,20 +109,27 @@ export async function POST(request) {
           score: updateResult[0]?.ai_generated_score,
           summary_preview: updateResult[0]?.ai_generated_summary?.substring(0, 100) + '...'
         });
-      }).catch((error) => {
+      } catch (error) {
         // Log error but don't fail the application
         console.error(`[Applicant ${applicant.applicant_id}] AI resume analysis failed:`, {
           error: error.message,
           stack: error.stack
         });
-      });
+      }
     } else {
       console.log(`[Applicant ${applicant.applicant_id}] No job found for AI analysis`);
     }
 
-    // Return success response immediately (before AI analysis completes)
+    // Return success response AFTER AI analysis completes
     return NextResponse.json(
-      { message: 'Application submitted successfully', applicant },
+      { 
+        message: 'Application submitted successfully', 
+        applicant,
+        ai_analysis: aiAnalysis ? {
+          score: aiAnalysis.score,
+          jd_match: aiAnalysis.jd_match
+        } : null
+      },
       { status: 201 }
     );
   } catch (error) {
