@@ -12,24 +12,32 @@ import io
 
 load_dotenv()
 
-app = FastAPI(title="Velocity-H Backend API")
+app = FastAPI(title="velocity-H Backend API")
 
 # CORS Configuration - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    expose_headers=["*"]
 )
 
-# Models
-class ResumeEvaluationResponse(BaseModel):
-    jd_match: str
-    missing_keywords: list[str]
-    profile_summary: str
-    prompt_used: str
+# Global Configuration
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", '')
+AI_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+
+# Initialize OpenRouter client once (reused across all endpoints)
+def get_ai_client():
+    """Get configured OpenRouter client."""
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not configured")
+    
+    return openai.OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=OPENROUTER_API_KEY,
+    )
+
+# Model
 
 class ErrorResponse(BaseModel):
     error: str
@@ -54,22 +62,23 @@ class ResumeAnalysisResponse(BaseModel):
     score: float
     summary: str
     missing_keywords: list[str]
-    jd_match: str  # Percentage as string (e.g., "85%")
 
 # Helper Functions
-def get_response(client, input_prompt, model_name="meta-llama/llama-3.3-70b-instruct:free"):
+def get_ai_response(input_prompt):
     """
-    Sends the prompt to OpenRouter and returns t 2he text response.
+    Sends the prompt to OpenRouter and returns the text response.
+    Uses global AI client and model configuration.
     """
     try:
+        client = get_ai_client()
         response = client.chat.completions.create(
-            model=model_name,
+            model=AI_MODEL,
             messages=[
                 {"role": "system", "content": "You are a helpful ATS assistant."},
                 {"role": "user", "content": input_prompt}
             ],
         )
-        return response.choices[0].message.content
+        return response.choices[0].message.content, response.usage
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OpenRouter API error: {str(e)}")
 
@@ -87,20 +96,20 @@ def extract_pdf_text(file_bytes):
         raise HTTPException(status_code=400, detail=f"PDF extraction error: {str(e)}")
 
 # Prompt Template
-input_prompt_template = """
-Act as a skilled and very experienced Application Tracking System (ATS) with a deep understanding of 
-tech field, engineering, marketing, sales, finance. 
-Your task is to evaluate the resume based on the given job description. 
-You must consider the job market is very competitive and you should provide 
-best assistance for improving the resumes.
+# input_prompt_template = """
+# Act as a skilled and very experienced Application Tracking System (ATS) with a deep understanding of 
+# tech field, engineering, marketing, sales, finance. 
+# Your task is to evaluate the resume based on the given job description. 
+# You must consider the job market is very competitive and you should provide 
+# best assistance for improving the resumes.
 
-resume: {text}
-description: {jd}
-cover letter or additional details from applicant: {cl}
+# resume: {text}
+# description: {jd}
+# cover letter or additional details from applicant: {cl}
 
-I want the response in a single string having the structure:
-{{"JD Match": "%", "MissingKeywords": [], "Profile Summary": ""}}
-"""
+# I want the response in a single string having the structure:
+# {{"JD Match": "%", "MissingKeywords": [], "Profile Summary": ""}}
+# """
 
 job_summary_prompt_template = """
 You are an expert HR assistant. Create a comprehensive, structured job summary that will be used by an ATS (Applicant Tracking System) to evaluate candidate resumes.
@@ -117,7 +126,7 @@ Job Description: {job_description}
 Required Experience: {required_experience_years} years
 Key Skills/Tags: {tags}
 
-Generate a well-structured summary (4-8 sentences) that highlights all essential requirements and qualifications.
+Generate a well-structured summary (4-12 sentences) that highlights all essential requirements and qualifications.
 Make it detailed enough for AI systems to accurately match and score candidate resumes.
 Use clear, specific language that can be easily parsed for keyword matching.
 """
@@ -134,7 +143,7 @@ Resume Text: {resume_text}
 Cover Letter: {cover_letter}
 
 Respond in JSON format:
-{{"score": <number 0-100>, "jd_match": "XX%", "missing_keywords": ["keyword1", "keyword2"], "summary": "<brief analysis>"}}
+{{"score": <number 0-100>, "missing_keywords": ["keyword1", "keyword2"], "summary": "<brief analysis>"}}
 """
 
 # API Endpoints
@@ -161,60 +170,42 @@ async def test_ai():
     Sends a simple prompt and returns the response.
     """
     try:
-        # Check API key
-        api_key = os.getenv("OPENROUTER_API_KEY", '')
-        if not api_key:
-            return {
-                "status": "error",
-                "message": "OPENROUTER_API_KEY not configured",
-                "model": None,
-                "response": None
-            }
-        
-        print("🧪 Testing AI connection...")
-        
-        # Initialize OpenRouter client
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-        )
+        print("Testing AI connection...")
+        print(f"Testing model: {AI_MODEL}")
         
         # Test prompt
-        test_prompt = "Say 'Hello! I am working correctly.' in a friendly way."
-        model = "meta-llama/llama-3.3-70b-instruct:free"
-        
-        print(f"🤖 Testing model: {model}")
+        test_prompt = "Say 'Hello! AI is working correctly.' in technical terms."
         
         # Get AI response
-        response_text = get_response(client, test_prompt, model)
+        response_text, usage = get_ai_response(test_prompt)
         
-        print(f"✓ AI test successful - Response length: {len(response_text)} chars")
+        print(f"AI test successful - token used - Input: {usage.prompt_tokens}, Output: {usage.completion_tokens}")
         
         return {
             "status": "success",
             "message": "AI is working correctly",
-            "model": model,
+            "model": AI_MODEL,
             "test_prompt": test_prompt,
             "response": response_text,
             "response_length": len(response_text)
         }
         
     except HTTPException as e:
-        print(f"❌ AI test failed (HTTP): {e.detail}")
+        print(f"AI test failed (HTTP): {e.detail}")
         return {
             "status": "error",
             "message": f"AI test failed: {e.detail}",
-            "model": model,
+            "model": AI_MODEL,
             "response": None
         }
     except Exception as e:
-        print(f"❌ AI test failed: {str(e)}")
+        print(f"AI test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return {
             "status": "error",
             "message": f"Unexpected error: {str(e)}",
-            "model": model if 'model' in locals() else None,
+            "model": AI_MODEL,
             "response": None,
             "error_type": type(e).__name__
         }
@@ -222,7 +213,7 @@ async def test_ai():
 @app.post("/api/generate-job-summary", response_model=JobSummaryResponse)
 async def generate_job_summary(request: JobSummaryRequest):
     """
-    Generate an AI-powered, ATS-optimized summary for a job posting.
+     Generate an AI-powered, ATS-optimized summary for a job posting.
     
     - **job_title**: The job title
     - **job_description**: Full job description
@@ -234,7 +225,7 @@ async def generate_job_summary(request: JobSummaryRequest):
     qualifications, and key competencies in a format easily parseable by ATS systems.
     """
     try:
-        print(f"📝 Generating job summary for: {request.job_title}")
+        print(f"Generating job summary for: {request.job_title}")
         
         # Validate input
         if not request.job_title.strip():
@@ -242,24 +233,10 @@ async def generate_job_summary(request: JobSummaryRequest):
         if not request.job_description.strip():
             raise HTTPException(status_code=400, detail="Job description cannot be empty")
         
-        # Check API key
-        api_key = os.getenv("OPENROUTER_API_KEY", '')
-        if not api_key:
-            print("❌ OPENROUTER_API_KEY not found in environment")
-            raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not configured")
-        
-        print(f"✓ API key found (length: {len(api_key)})")
-        
-        # Initialize OpenRouter client
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-        )
-        
         # Format tags for better readability
         tags_formatted = ", ".join(request.tags) if request.tags else "Not specified"
         
-        print(f"✓ Job details - Experience: {request.required_experience_years} years, Tags: {len(request.tags) if request.tags else 0}")
+        print(f"Job details - Experience: {request.required_experience_years} years, Tags: {tags_formatted}")
         
         # Format prompt with all job details
         final_prompt = job_summary_prompt_template.format(
@@ -269,30 +246,29 @@ async def generate_job_summary(request: JobSummaryRequest):
             tags=tags_formatted
         )
         
-        print(f"🤖 Sending to AI (prompt length: {len(final_prompt)} chars)...")
+        print(f"Sending to AI (prompt length: {len(final_prompt)} chars)...")
         
-        # Get AI response - using Meta Llama 3.3 70B free model
-        model = "meta-llama/llama-3.3-70b-instruct:free"
-        response_text = get_response(client, final_prompt, model)
+        # Get AI response
+        response_text, usage = get_ai_response(final_prompt)
         
-        print(f"✓ AI responded (response length: {len(response_text)} chars)")
+        print(f"Token Utililized - Input: {usage.prompt_tokens}, Output: {usage.completion_tokens}") 
         
         # Clean and validate response
         summary = response_text.strip()
         
         if not summary:
-            print("❌ AI returned empty summary")
+            print("AI returned empty summary")
             raise HTTPException(status_code=500, detail="AI generated empty summary")
         
         # Log successful generation for monitoring
-        print(f"✓ Generated summary for job: {request.job_title}")
+        print(f"Generated summary for job: {request.job_title}")
         
         return JobSummaryResponse(summary=summary)
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error generating job summary: {type(e).__name__}: {str(e)}")
+        print(f"Error generating job summary: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Summary generation error: {str(e)}")
@@ -308,7 +284,6 @@ async def analyze_resume(request: ResumeAnalysisRequest):
     
     Returns:
     - **score**: Match score (0-100) indicating candidate fit
-    - **jd_match**: Percentage match as string (e.g., "85%")
     - **missing_keywords**: List of required skills/keywords not found in resume
     - **summary**: Brief analysis highlighting strengths and gaps
     """
@@ -323,7 +298,7 @@ async def analyze_resume(request: ResumeAnalysisRequest):
         if not request.resume_url.startswith(('http://', 'https://')):
             raise HTTPException(status_code=400, detail="Invalid resume URL format")
         
-        print(f"📄 Analyzing resume from: {request.resume_url[:50]}...")
+        print(f"Analyzing resume from: {request.resume_url[:50]}...")
         
         # Download resume from URL with error handling
         try:
@@ -341,7 +316,7 @@ async def analyze_resume(request: ResumeAnalysisRequest):
         # Validate content type
         content_type = resume_response.headers.get('content-type', '')
         if 'pdf' not in content_type.lower() and not request.resume_url.lower().endswith('.pdf'):
-            print(f"⚠️  Warning: Content-Type is '{content_type}', proceeding anyway")
+            print(f"Warning: Content-Type is '{content_type}', proceeding anyway")
         
         # Extract text from PDF
         resume_text = extract_pdf_text(resume_response.content)
@@ -349,17 +324,7 @@ async def analyze_resume(request: ResumeAnalysisRequest):
         if not resume_text.strip():
             raise HTTPException(status_code=400, detail="Could not extract text from resume PDF - file may be empty or corrupted")
         
-        print(f"✓ Extracted {len(resume_text)} characters from resume")
-        
-        # Initialize OpenRouter client
-        api_key = os.getenv("OPENROUTER_API_KEY", '')
-        if not api_key:
-            raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not configured")
-        
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-        )
+        print(f"Extracted {len(resume_text)} characters from resume")
         
         # # Prepare resume text with smart truncation
         # max_resume_chars = 3500
@@ -375,16 +340,15 @@ async def analyze_resume(request: ResumeAnalysisRequest):
         
         # Format prompt with all data
         final_prompt = resume_analysis_prompt_template.format(
-            job_description=request.job_description[:2000],  # Limit JD length too
+            job_description=request.job_description,
             resume_text=resume_text,
-            cover_letter=cover_letter_text[:1000]  # Limit cover letter
+            cover_letter=cover_letter_text
         )
         
-        print("🤖 Sending to AI for analysis...")
+        print("Sending to AI for analysis...")
         
-        # Get AI response - using Meta Llama 3.3 70B free model
-        model = "meta-llama/llama-3.3-70b-instruct:free"
-        response_text = get_response(client, final_prompt, model)
+        # Get AI response
+        response_text, usage = get_ai_response(final_prompt)
         
         # Parse JSON response with better error handling
         try:
@@ -395,7 +359,7 @@ async def analyze_resume(request: ResumeAnalysisRequest):
             
             data = json.loads(clean_json)
         except json.JSONDecodeError as e:
-            print(f"❌ JSON Parse Error: {str(e)}")
+            print(f"JSON Parse Error: {str(e)}")
             print(f"Raw AI Response: {response_text[:500]}")
             raise HTTPException(
                 status_code=500,
@@ -404,20 +368,20 @@ async def analyze_resume(request: ResumeAnalysisRequest):
         
         # Validate and extract data with defaults
         score = float(data.get("score", 0))
-        jd_match = data.get("jd_match", f"{int(score)}%")
         missing_keywords = data.get("missing_keywords", [])
         summary = data.get("summary", "Analysis completed successfully")
         
         # Validate score range
         if not 0 <= score <= 100:
-            print(f"⚠️  AI returned invalid score: {score}, clamping to 0-100")
+            print(f"AI returned invalid score: {score}, clamping to 0-100")
             score = max(0, min(100, score))
         
-        print(f"✓ Analysis complete - Score: {score}/100, Missing keywords: {len(missing_keywords)}")
+        print(f"Analysis complete - Score: {score}/100, Missing keywords: {len(missing_keywords)}")
         
+        print(f"Token usage: {usage}")
+
         return ResumeAnalysisResponse(
             score=score,
-            jd_match=jd_match,
             missing_keywords=missing_keywords if isinstance(missing_keywords, list) else [],
             summary=summary
         )
@@ -425,75 +389,65 @@ async def analyze_resume(request: ResumeAnalysisRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Resume analysis error: {str(e)}")
 
-@app.post("/evaluate", response_model=ResumeEvaluationResponse)
-async def evaluate_resume(
-    resume: UploadFile = File(..., description="Resume PDF file"),
-    job_description: str = Form(..., description="Job description text"),
-):
-    """
-    Evaluate a resume against a job description using AI.
+# @app.post("/evaluate", response_model=ResumeEvaluationResponse)
+# async def evaluate_resume(
+#     resume: UploadFile = File(..., description="Resume PDF file"),
+#     job_description: str = Form(..., description="Job description text"),
+# ):
+#     """
+#     Evaluate a resume against a job description using AI.
     
-    - **resume**: PDF file of the resume
-    - **job_description**: The job description text
+#     - **resume**: PDF file of the resume
+#     - **job_description**: The job description text
       
-    Returns the match percentage, missing keywords, and profile summary.
-    """
+#     Returns the match percentage, missing keywords, and profile summary.
+#     """
     
-    # Validate file type
-    if not resume.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+#     # Validate file type
+#     if not resume.filename.endswith('.pdf'):
+#         raise HTTPException(status_code=400, detail="Only PDF files are supported")
     
-    # Validate inputs
-    if not job_description.strip():
-        raise HTTPException(status_code=400, detail="Job description cannot be empty")
+#     # Validate inputs
+#     if not job_description.strip():
+#         raise HTTPException(status_code=400, detail="Job description cannot be empty")
     
-    try:
-        # Read PDF content
-        pdf_bytes = await resume.read()
-        resume_text = extract_pdf_text(pdf_bytes)
+#     try:
+#         # Read PDF content
+#         pdf_bytes = await resume.read()
+#         resume_text = extract_pdf_text(pdf_bytes)
         
-        if not resume_text.strip():
-            raise HTTPException(status_code=400, detail="Could not extract text from PDF")
+#         if not resume_text.strip():
+#             raise HTTPException(status_code=400, detail="Could not extract text from PDF")
         
-        # Initialize OpenRouter client
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key= os.getenv("OPENROUTER_API_KEY", ''),
-        )
+#         # Format prompt
+#         final_prompt = input_prompt_template.format(text=resume_text, jd=job_description)
         
-        # MODEL - using Meta Llama 3.3 70B free model
-        model = "meta-llama/llama-3.3-70b-instruct:free"
-
-        # Format prompt
-        final_prompt = input_prompt_template.format(text=resume_text, jd=job_description)
+#         # Get AI response
+#         response_text = get_ai_response(final_prompt)
         
-        # Get AI response
-        response_text = get_response(client, final_prompt, model)
+#         # Parse JSON response
+#         clean_json = response_text.replace("```json", "").replace("```", "").strip()
+#         data = json.loads(clean_json)
         
-        # Parse JSON response
-        clean_json = response_text.replace("```json", "").replace("```", "").strip()
-        data = json.loads(clean_json)
+#         return ResumeEvaluationResponse(
+#             jd_match=data.get("JD Match", "N/A"),
+#             missing_keywords=data.get("MissingKeywords", []),
+#             profile_summary=data.get("Profile Summary", ""),
+#             prompt_used=final_prompt
+#         )
         
-        return ResumeEvaluationResponse(
-            jd_match=data.get("JD Match", "N/A"),
-            missing_keywords=data.get("MissingKeywords", []),
-            profile_summary=data.get("Profile Summary", ""),
-            prompt_used=final_prompt
-        )
-        
-    except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"AI response was not valid JSON. Raw response: {response_text[:500]}"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-
+#     except json.JSONDecodeError as e:
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"AI response was not valid JSON. Raw response: {response_text[:500]}"
+#         )
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
