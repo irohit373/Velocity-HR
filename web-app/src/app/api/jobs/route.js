@@ -91,6 +91,12 @@ export async function POST(request) {
       );
     }
 
+    // Date validation for expiry_data as it Creating error.
+    const normalizedExpiryDate =
+      typeof expiry_date === 'string'
+        ? (expiry_date.trim() === '' ? null : expiry_date.trim())
+        : (expiry_date ?? null);
+
     // Insert job into database
     const result = await sql`
       INSERT INTO jobs (
@@ -100,7 +106,7 @@ export async function POST(request) {
       VALUES (
         ${user.userId}, ${job_title}, ${job_description}, 
         ${required_experience_years || 0}, ${tags || []}, 
-        ${location}, ${salary_range}, ${expiry_date}
+        ${location}, ${salary_range}, ${normalizedExpiryDate}
       )
       RETURNING *
     `;
