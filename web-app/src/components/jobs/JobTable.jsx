@@ -63,6 +63,7 @@ export default function JobTable({ initialJobs }) {
               <th>Job Title</th>
               <th>Experience</th>
               <th>Created</th>
+              <th>Last Date to Apply</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -70,7 +71,7 @@ export default function JobTable({ initialJobs }) {
           <tbody>
             {jobs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-12 text-base-content/50">
+                <td colSpan={6} className="text-center py-12 text-base-content/50">
                   No jobs posted yet. Click "Add New Job" to get started.
                 </td>
               </tr>
@@ -92,6 +93,11 @@ export default function JobTable({ initialJobs }) {
                   </td>
                   <td className="text-base-content/70">
                     {formatDate(job.created_at)}
+                  </td>
+                  <td className="text-base-content/70">
+                    {job.expiry_date
+                      ? formatDate(job.expiry_date)
+                      : '—'}
                   </td>
                   <td>
                     <button
