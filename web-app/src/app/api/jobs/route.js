@@ -14,6 +14,15 @@ export const maxDuration = 60;
  */
 export async function GET(request) {
   try {
+    // Auto-deactivate expired jobs
+    await sql`
+      UPDATE jobs
+      SET is_active = false
+      WHERE is_active = true
+      AND expiry_date IS NOT NULL
+      AND expiry_date <= NOW()
+    `;
+
     // Extract query parameters from URL
     const { searchParams } = new URL(request.url);
     const isPublic = searchParams.get('public') === 'true';
