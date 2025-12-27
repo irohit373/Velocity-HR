@@ -3,12 +3,27 @@
 import Link from "next/link";
 import { useUser } from "@/providers/UserProvider";
 import UserDropdown from "./UserDropdown";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const user = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState('light');
+
+  // Load theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+  }, []);
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -31,6 +46,15 @@ export default function Navbar() {
         <Link href="/jobs" className="px-3 py-1.5 font-medium hover:bg-base-200 rounded-lg transition-colors">
           Jobs
         </Link>
+
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className="btn btn-ghost btn-sm btn-square"
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
           
         {user ? (
           <UserDropdown user={user} />
@@ -87,6 +111,17 @@ export default function Navbar() {
                 >
                   Jobs
                 </Link>
+              </li>
+
+              {/* Theme Toggle in Mobile Menu */}
+              <li>
+                <button
+                  onClick={toggleTheme}
+                  className="font-medium flex items-center gap-2"
+                >
+                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                  <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+                </button>
               </li>
 
               {user ? (

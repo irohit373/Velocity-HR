@@ -17,7 +17,19 @@ export default async function RootLayout({ children }) {
   const user = await getCurrentUser();
 
   return (
-    <html lang="en" data-theme="light">
+    <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const theme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="bg-base-100">
         {/* Wrap entire app in UserProvider to share user data */}
         <UserProvider user={user}>
