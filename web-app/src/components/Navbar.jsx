@@ -94,7 +94,8 @@ export default function Navbar() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed top-0 right-0 bottom-0 w-64 bg-base-100 shadow-xl"
+            className="fixed top-0 right-0 bottom-0 w-64 bg-base-100 shadow-xl border-l"
+            style={{ backgroundColor: 'var(--fallback-b1,oklch(var(--b1)))' }}
           >
             <div className="flex justify-between items-center p-4 border-b">
               <span className="text-lg font-bold">Menu</span>
