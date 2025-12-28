@@ -16,8 +16,9 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Extract job ID from URL parameters
-    const jobId = parseInt(params.id);
+    // 📚 LEARNING: In Next.js 15+, params is a Promise and must be awaited
+    const { id } = await params;
+    const jobId = parseInt(id);
 
     // Verify job ownership: Check if this job belongs to the current HR user
     // This prevents HR users from viewing applicants of other HR's jobs

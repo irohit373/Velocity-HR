@@ -9,6 +9,23 @@ import ApplicantModal from './ApplicantModal.jsx';
 export default function ApplicantTable({ applicants }) {
   // Track which applicant is selected for viewing in modal
   const [selectedApplicant, setSelectedApplicant] = useState(null);
+  // Track applicants state for live updates
+  const [applicantsList, setApplicantsList] = useState(applicants);
+
+  // Handle status update from modal
+  const handleStatusUpdate = (applicantId, newStatus) => {
+    setApplicantsList(prevApplicants =>
+      prevApplicants.map(app =>
+        app.applicant_id === applicantId
+          ? { ...app, status: newStatus }
+          : app
+      )
+    );
+    // Update the selected applicant as well to reflect changes in modal
+    if (selectedApplicant?.applicant_id === applicantId) {
+      setSelectedApplicant({ ...selectedApplicant, status: newStatus });
+    }
+  };
 
   // Format date to readable string (e.g., "Jan 15, 2024")
   const formatDate = (date) => {
@@ -28,6 +45,32 @@ export default function ApplicantTable({ applicants }) {
     return 'text-red-600';
   };
 
+  // Get badge styling based on application status
+  // Returns appropriate DaisyUI badge class for each status type
+  const getStatusBadge = (status) => {
+    const statusLower = status?.toLowerCase() || 'pending';
+    
+    switch (statusLower) {
+      case 'hired':
+        return 'badge-success'; // Green
+      case 'scheduled':
+        return 'badge-info'; // Blue
+      case 'reviewed':
+        return 'badge-primary'; // Purple/Primary color
+      case 'rejected':
+        return 'badge-error'; // Red
+      case 'pending':
+      default:
+        return 'badge-warning'; // Yellow/Orange
+    }
+  };
+
+  // Format status text for display (capitalize first letter)
+  const formatStatus = (status) => {
+    if (!status) return 'Pending';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
+
   return (
     <>
       <div className="overflow-x-auto">
@@ -43,14 +86,14 @@ export default function ApplicantTable({ applicants }) {
             </tr>
           </thead>
           <tbody>
-            {applicants.length === 0 ? (
+            {applicantsList.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-12 text-base-content/50">
                   No applications yet.
                 </td>
               </tr>
             ) : (
-              applicants.map((applicant) => (
+              applicantsList.map((applicant) => (
                 <tr
                   key={applicant.applicant_id}
                   className="hover cursor-pointer"
@@ -80,17 +123,9 @@ export default function ApplicantTable({ applicants }) {
                   </td>
                   <td>
                     <span
-                      className={`badge ${
-                        applicant.status === 'shortlisted'
-                          ? 'badge-success'
-                          : applicant.status === 'reviewed'
-                          ? 'badge-info'
-                          : applicant.status === 'rejected'
-                          ? 'badge-error'
-                          : 'badge-ghost'
-                      }`}
+                      className={`badge ${getStatusBadge(applicant.status)}`}
                     >
-                      {applicant.status}
+                      {formatStatus(applicant.status)}
                     </span>
                   </td>
                   <td>
@@ -128,6 +163,7 @@ export default function ApplicantTable({ applicants }) {
         <ApplicantModal
           applicant={selectedApplicant}
           onClose={() => setSelectedApplicant(null)}
+          onStatusUpdate={handleStatusUpdate}
         />
       )}
     </>

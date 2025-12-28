@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { X, Eye, Mail, Phone, Calendar, Briefcase } from 'lucide-react';
 
 // Modal component to display detailed applicant information
 // Shows contact info, AI analysis, cover letter, and resume download
-export default function ApplicantModal({ applicant, onClose }) {
+export default function ApplicantModal({ applicant, onClose, onStatusUpdate }) {
+  const [status, setStatus] = useState(applicant.status || 'pending');
+  const [updating, setUpdating] = useState(false);
+
   // Format date to readable string (e.g., "January 15, 2024")
   const formatDate = (date) => {
     if (!date) return 'N/A';
@@ -13,6 +17,33 @@ export default function ApplicantModal({ applicant, onClose }) {
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  // Update applicant status
+  const handleStatusUpdate = async (newStatus) => {
+    if (newStatus === status) return;
+    
+    setUpdating(true);
+    try {
+      const response = await fetch(`/api/applicants/${applicant.applicant_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setStatus(newStatus);
+        if (onStatusUpdate) {
+          onStatusUpdate(applicant.applicant_id, newStatus);
+        }
+      } else {
+        console.error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -76,6 +107,58 @@ export default function ApplicantModal({ applicant, onClose }) {
               </p>
             </div>
           )}
+
+          {/* Status Management */}
+          <div>
+            <h3 className="font-semibold mb-3">Application Status</h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleStatusUpdate('pending')}
+                disabled={updating}
+                className={`btn btn-sm ${
+                  status === 'pending' ? 'btn-warning' : 'btn-outline'
+                }`}
+              >
+                Pending
+              </button>
+              <button
+                onClick={() => handleStatusUpdate('scheduled')}
+                disabled={updating}
+                className={`btn btn-sm ${
+                  status === 'scheduled' ? 'btn-info' : 'btn-outline'
+                }`}
+              >
+                Scheduled
+              </button>
+              <button
+                onClick={() => handleStatusUpdate('reviewed')}
+                disabled={updating}
+                className={`btn btn-sm ${
+                  status === 'reviewed' ? 'btn-primary' : 'btn-outline'
+                }`}
+              >
+                Reviewed
+              </button>
+              <button
+                onClick={() => handleStatusUpdate('rejected')}
+                disabled={updating}
+                className={`btn btn-sm ${
+                  status === 'rejected' ? 'btn-error' : 'btn-outline'
+                }`}
+              >
+                Rejected
+              </button>
+              <button
+                onClick={() => handleStatusUpdate('hired')}
+                disabled={updating}
+                className={`btn btn-sm ${
+                  status === 'hired' ? 'btn-success' : 'btn-outline'
+                }`}
+              >
+                Hired
+              </button>
+            </div>
+          </div>
 
           {/* Cover Letter */}
           {applicant.detail_box && (
