@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:init": "node scripts/init-db.js",
-    "db:seed": "node scripts/seed-data.js"
+    "db:init": "node src/scripts/init-db.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -16,6 +15,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "env": "^0.0.2",
+    "googleapis": "^169.0.0",
     "jose": "^6.1.2",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.556.0",

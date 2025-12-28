@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { User, LayoutDashboard, Calendar, LogOut } from 'lucide-react';
+import { User, LayoutDashboard, Calendar, Settings, LogOut } from 'lucide-react';
 
 export default function UserDropdown({ user }) {
   const router = useRouter();
@@ -55,6 +55,12 @@ export default function UserDropdown({ user }) {
           <a onClick={() => router.push('/dashboard/scheduling')} className="gap-3">
             <Calendar size={18} />
             <span>Scheduling</span>
+          </a>
+        </li>
+        <li>
+          <a onClick={() => router.push('/dashboard/settings')} className="gap-3">
+            <Settings size={18} />
+            <span>Settings</span>
           </a>
         </li>
         
