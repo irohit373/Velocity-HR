@@ -354,3 +354,134 @@ VELOCITY H Team
     return null;
   }
 }
+
+/**
+ * Send interview cancellation email to candidate
+ * @param {Object} params - Email parameters
+ * @param {string} params.candidateName - Candidate's full name
+ * @param {string} params.candidateEmail - Candidate's email address
+ * @param {string} params.jobTitle - Job position
+ * @param {string} params.reason - Optional cancellation reason
+ */
+export async function sendInterviewCancellation({
+  candidateName,
+  candidateEmail,
+  jobTitle,
+  reason = '',
+}) {
+  try {
+    if (!candidateEmail || !candidateName || !jobTitle) {
+      throw new Error('Missing required email parameters');
+    }
+
+    const emailResponse = await resend.emails.send({
+      from: 'VELOCITY HR <onboarding@resend.dev>',
+      to: [candidateEmail],
+      subject: `Interview Cancelled - ${jobTitle}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+              }
+              .header {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+              }
+              .content {
+                background: #ffffff;
+                padding: 30px;
+                border: 1px solid #e5e7eb;
+                border-top: none;
+              }
+              .footer {
+                background: #f9fafb;
+                padding: 20px;
+                text-align: center;
+                border-radius: 0 0 10px 10px;
+                color: #6b7280;
+                font-size: 14px;
+              }
+              .info-box {
+                background: #fef2f2;
+                border-left: 4px solid #ef4444;
+                padding: 15px;
+                margin: 20px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1 style="margin: 0; font-size: 28px;">Interview Cancelled</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">VELOCITY H Recruitment</p>
+            </div>
+            
+            <div class="content">
+              <p>Dear ${candidateName},</p>
+              
+              <p>We're writing to inform you that your scheduled interview for the <strong>${jobTitle}</strong> position has been cancelled.</p>
+              
+              ${reason ? `
+              <div class="info-box">
+                <strong>Reason:</strong><br>
+                ${reason}
+              </div>
+              ` : ''}
+              
+              <p>We apologize for any inconvenience this may cause. Your application is still under consideration, and we will reach out to you if we'd like to reschedule or proceed to the next steps.</p>
+              
+              <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+              
+              <p style="margin-top: 30px;">Thank you for your understanding.</p>
+            </div>
+            
+            <div class="footer">
+              <p>Best regards,<br>VELOCITY H Recruitment Team</p>
+              <p>© ${new Date().getFullYear()} VELOCITY H. All rights reserved.</p>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Dear ${candidateName},
+
+We're writing to inform you that your scheduled interview for the ${jobTitle} position has been cancelled.
+
+${reason ? `Reason: ${reason}\n` : ''}
+
+We apologize for any inconvenience this may cause. Your application is still under consideration, and we will reach out to you if we'd like to reschedule or proceed to the next steps.
+
+If you have any questions or concerns, please don't hesitate to contact us.
+
+Thank you for your understanding.
+
+Best regards,
+VELOCITY H Recruitment Team
+      `,
+    });
+
+    console.log('✅ Cancellation email sent:', {
+      to: candidateEmail,
+      emailId: emailResponse.data?.id,
+    });
+
+    return emailResponse;
+  } catch (error) {
+    console.error('❌ Cancellation email failed:', {
+      error: error.message,
+      candidateEmail,
+    });
+    return null;
+  }
+}

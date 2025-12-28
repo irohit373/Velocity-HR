@@ -151,6 +151,30 @@ export async function createCalendarEventWithMeet({
 }
 
 /**
+ * Delete a calendar event
+ * @param {Object} params - Delete parameters
+ * @param {number} params.hrId - HR user ID
+ * @param {string} params.eventId - Google Calendar event ID
+ */
+export async function deleteCalendarEvent({ hrId, eventId }) {
+  try {
+    const calendar = await getCalendarClient(hrId);
+
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId: eventId,
+      sendUpdates: 'all', // Notify attendees about cancellation
+    });
+
+    console.log(`🗑️ Calendar event deleted: ${eventId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete calendar event:', error);
+    throw error;
+  }
+}
+
+/**
  * 📚 SIMPLIFIED VERSION: For development without Google OAuth
  * Generates a mock meet link for testing
  * Replace this with createCalendarEventWithMeet in production
