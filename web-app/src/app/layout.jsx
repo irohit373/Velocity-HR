@@ -2,6 +2,7 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { UserProvider } from "@/providers/UserProvider";
 import NavbarWrapper from "@/components/NavbarWrapper";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = {
   title: "VELOCITY H",
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }) {
             {children}
           </main>
         </UserProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
