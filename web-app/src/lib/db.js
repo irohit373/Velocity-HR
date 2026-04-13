@@ -1,6 +1,18 @@
 import { neon } from '@neondatabase/serverless';
 
-export const sql = neon(process.env.DATABASE_URL);
+// Initialize neon lazily to avoid errors during build time when DATABASE_URL is missing
+const getSql = () => {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    // Return a dummy function that throws when called, instead of throwing at import time
+    return async () => {
+      throw new Error('DATABASE_URL is not defined. Please check your environment variables.');
+    };
+  }
+  return neon(connectionString);
+};
+
+export const sql = getSql();
 
 export async function initDatabase() {
   // Create hrs (HR users) table with Google OAuth support

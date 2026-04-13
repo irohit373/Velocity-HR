@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 // 📚 LEARNING: Initialize Resend client
 // We create ONE instance of Resend that's reused across all email sends
 // This is more efficient than creating a new client for each email
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_for_build');
 
 /**
  * Send email to Candidate

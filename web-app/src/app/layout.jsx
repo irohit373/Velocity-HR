@@ -1,6 +1,4 @@
 import "./globals.css";
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { Analytics } from "@vercel/analytics/next"
 import { getCurrentUser } from "@/lib/auth";
 import { UserProvider } from "@/providers/UserProvider";
 import NavbarWrapper from "@/components/NavbarWrapper";
