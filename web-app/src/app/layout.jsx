@@ -2,6 +2,7 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { UserProvider } from "@/providers/UserProvider";
 import NavbarWrapper from "@/components/NavbarWrapper";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from '@vercel/analytics/next';
 
 export const metadata = {
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }) {
             {children}
           </main>
         </UserProvider>
+        <SpeedInsights />
         <Analytics />
       </body>
     </html>
